@@ -55,13 +55,6 @@ command! -nargs=0 -bar DbgStepOver          python __debugger.stepOver()
 command! -nargs=0 -bar DbgStepOut           python __debugger.stepOut()
 command! -nargs=0 -bar DbgRefreshWatch      python __debugger.stepOut()
 
-map <F2> :DbgStepInto<CR>
-map <F3> :DbgStepOver<CR>
-map <F4> :DbgStepOut<CR>
-map <F5> :DbgRun<CR>
-map <F6> :DbgDetach<CR>
-map <F8> :DbgToggleBreakpoint<CR>
-
 function g:__dbg_WatchFoldText()
   let nucolwidth = &fdc + &number*&numberwidth
   let winwd = winwidth(0) - nucolwidth - 5
@@ -424,6 +417,9 @@ class DBGPDebuggerUI:
         bpNo = self.bpList[guid]
         vim.command("sign unplace %s" % bpNo)
 
+    def trace(self, text):
+        self.tracewin.write(text)
+
 class DBGPDebuggerWrapper:
     debugger = None
     ui = None
@@ -572,7 +568,9 @@ class DBGPDebuggerWrapper:
         list1txt = ", ".join(list1)
         list2txt = ", ".join(list2)
         cmd = "__xdbg_get_objList(array(array(%s), array(%s)))" % (list1txt, list2txt)
+        self.ui.trace("Command: %s" % cmd)
         strOutput = self.debugger.session.evalString(cmd).value
+        self.ui.trace("Response: %s" % cmd)
         d=JSONDecoder()
         resp = d.decode(strOutput)
         self.ui.setProperties(localList, self.watchList, resp)
