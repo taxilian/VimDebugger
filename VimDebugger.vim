@@ -185,6 +185,8 @@ class StackWindow(VimWindow):
 
     def on_create(self):
         self.command('highlight CurStack term=reverse ctermfg=White ctermbg=Red gui=reverse')
+        self.command('setlocal noai nocin')
+        self.command('setlocal nonumber noswapfile')
 
         # set key mappings for the stack window
         self.command("nnoremap <buffer> <silent> <cr>          :python __debugger.selectStackDepth()<cr>")
@@ -215,7 +217,6 @@ class WatchWindow(VimWindow):
 
     def on_create(self):
         self.write('<?')
-        self.command('inoremap <buffer> <cr> <esc>:python debugger.watch_execute()<cr>')
         self.command('setlocal noai nocin')
         self.command('setlocal foldenable foldmethod=marker foldmarker={,} commentstring=%s foldcolumn=0 foldlevel=0 nonumber noswapfile shiftwidth=2')
         self.command('setlocal foldtext=g:__dbg_WatchFoldText()')
@@ -280,7 +281,7 @@ class WatchWindow(VimWindow):
         self.write("".ljust(2*level) + firstLine)
         startLine = len(self.buffer)
         for item in arr.keys():
-            self.writeValue(item, level + 1, '"%s" => ')
+            self.writeValue(arr[item], level + 1, '"%s" => ' % item )
         self.write("".ljust(2*level) + "},")
         endLine = len(self.buffer)
 
@@ -364,6 +365,7 @@ class DBGPDebuggerUI:
         if filename != self.filename:
             vim.command("silent edit %s" % filename)
             self.filename = filename
+        vim.command("silent! sign unplace 500")
         vim.command('sign place 500 name=%s line=%s file=%s' % (name, line, filename))
 
     def gotoSign(self, filename, line, depth = 0):

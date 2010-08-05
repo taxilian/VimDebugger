@@ -33,12 +33,12 @@ Key Bindings
 ============
 The debugger does not automatically bind any hotkeys, but leaves that to you to do in your own .vimrc.  I often use Visual Studio, so I set my key bindings up in a similar way:
 
-map <F11> :DbgStepInto<CR>
-map <F10> :DbgStepOver<CR>
-map <S-F11> :DbgStepOut<CR>
-map <F5> :DbgRun<CR>
-map <S-F5> :DbgDetach<CR>
-map <F8> :DbgToggleBreakpoint<CR>
+    map <F11> :DbgStepInto<CR>
+    map <F10> :DbgStepOver<CR>
+    map <S-F11> :DbgStepOut<CR>
+    map <F5> :DbgRun<CR>
+    map <S-F5> :DbgDetach<CR>
+    map <F8> :DbgToggleBreakpoint<CR>
 
 Watch
 =====
