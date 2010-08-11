@@ -3359,7 +3359,7 @@ PHP_FUNCTIONS = {
         "print_r": 'function __xdbg_print_r($var) { ob_start(); print_r($var); $tmp = ob_get_contents(); ob_end_clean(); return $tmp; }',
         "run": 'function __xdbg_run($method) { ob_start(); $method(); $tmp = ob_get_contents(); ob_end_clean(); return $tmp; }',
         "get_value": r"""
-function __xdbg_get_value($var, $maxDepth=3) {
+function __xdbg_get_value($var, $maxDepth=4) {
     $return = null;
     $isObj = is_object($var);
 
@@ -3458,7 +3458,7 @@ function __xdbg_get_methodList($methodList) {
     return $output;
 }""",
     "get_object": """
-function __xdbg_get_object($var, $maxDepth=2) {
+function __xdbg_get_object($var, $maxDepth=4) {
     $entry = array();
     $class = get_class($var);
     $ref = new ReflectionClass($var);

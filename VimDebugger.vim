@@ -53,7 +53,7 @@ command! -nargs=0 -bar DbgToggleBreakpoint  python __debugger.toggleLineBreakpoi
 command! -nargs=0 -bar DbgStepInto          python __debugger.stepInto()
 command! -nargs=0 -bar DbgStepOver          python __debugger.stepOver()
 command! -nargs=0 -bar DbgStepOut           python __debugger.stepOut()
-command! -nargs=0 -bar DbgRefreshWatch      python __debugger.stepOut()
+command! -nargs=0 -bar DbgRefreshWatch      python __debugger.updateWatch()
 
 function g:__dbg_WatchFoldText()
   let nucolwidth = &fdc + &number*&numberwidth
@@ -494,6 +494,7 @@ class DBGPDebuggerWrapper:
             status = self.debugger.session.statusName
             if status == "break":
                 self.checkPosition()
+                self.updateWatch()
             elif status == "stopping":
                 self.detach()
             else:
@@ -518,7 +519,6 @@ class DBGPDebuggerWrapper:
     def checkPosition(self):
         stackList = self.debugger.session.stackFramesGet()
         self.ui.setStackList(stackList)
-        self.updateWatch()
 
     def _hasLineBreakpoint(self, file, line):
         bpId = "%s:%s" % (file, line)
