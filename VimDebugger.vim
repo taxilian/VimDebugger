@@ -102,6 +102,8 @@ class VimWindow:
   def write(self, msg):
     """ append last """
     self.prepare()
+    if type(msg) is unicode:
+        msg.encode("utf8")
     if self.firstwrite:
       self.firstwrite = False
       self.buffer[:] = str(msg).split('\n')

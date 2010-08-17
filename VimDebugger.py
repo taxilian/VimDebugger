@@ -3316,7 +3316,7 @@ class VimDebugger(manager):
         if self.language.upper() == "PHP":
             for key in PHP_FUNCTIONS:
                 tmp = self.session.evalString("eval('%s')" % PHP_FUNCTIONS[key])
-        self.session.featureSet("max_data", 65536)
+        self.session.featureSet("max_data", 131072)
         # XXX notify init listeners
         return 1
 
@@ -3359,7 +3359,7 @@ PHP_FUNCTIONS = {
         "print_r": 'function __xdbg_print_r($var) { ob_start(); print_r($var); $tmp = ob_get_contents(); ob_end_clean(); return $tmp; }',
         "run": 'function __xdbg_run($method) { ob_start(); $method(); $tmp = ob_get_contents(); ob_end_clean(); return $tmp; }',
         "get_value": r"""
-function __xdbg_get_value($var, $maxDepth=4) {
+function __xdbg_get_value($var, $maxDepth=3) {
     $return = null;
     $isObj = is_object($var);
 
@@ -3458,7 +3458,7 @@ function __xdbg_get_methodList($methodList) {
     return $output;
 }""",
     "get_object": """
-function __xdbg_get_object($var, $maxDepth=4) {
+function __xdbg_get_object($var, $maxDepth=3) {
     $entry = array();
     $class = get_class($var);
     $ref = new ReflectionClass($var);
