@@ -3355,20 +3355,23 @@ class VimDebugger(manager):
         return self.init != None
 
     def phpEval(self, evalCode):
-        methodText = "function() { return %s; }" % evalCode
-        evalText = "__xdbg_get_value(__xdbg_evalWatch(%s), 3)" % methodText
+        evalText = "json_encode(__xdbg_get_value(%s))" % evalCode
 
         try:
-            strOutput = self.session.evalString(cmd).value
+            strOutput = self.session.evalString(evalText).value
         except Exception, e:
+            print e
             return "Could not eval %s: %s" % (evalCode, e.msg)
 
         d=JSONDecoder()
         try:
             resp = d.decode(strOutput)
         except Exception, e:
-            resp = "Could not eval code: %s" % e.msg
+            print e
+            resp = "Could not eval code: %s" % evalCode
 
+        if resp == 4370448544:
+            return "Could not execute"
         return resp
 
     def phpWatch(self, varList):
@@ -3491,7 +3494,7 @@ function __xdbg_get_methodList($methodList, $className) {
         }
         $desc = $static."$vis $name(" . implode(", ", $params) . ");";
         if ($method->getDeclaringClass()->getName() != $className) {
-            $desc .= "  // inherited from $className";
+            $desc .= "  // inherited from " . $method->getDeclaringClass()->getName();
         }
         $output[$desc] = array($method->getFileName(), $method->getStartLine());
     }
@@ -3520,12 +3523,11 @@ function __xdbg_get_objList(array $list) {
     return @json_encode($outputFull);
 }""",
         "evalWatch": """
-    function __xdbg_evalWatch($method) {
-        ob_start();
-        $ret = $method();
-        $tmp = ob_get_contents();
-        ob_end_clean();
-        return json_encode(empty($tmp) ?: $ret);
-    }',
-        """,
+function __xdbg_evalWatch($method) {
+    ob_start();
+    $ret = $method();
+    $tmp = ob_get_contents();
+    ob_end_clean();
+    return empty($tmp) ? $ret : $tmp;
+}""",
 }

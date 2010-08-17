@@ -55,7 +55,7 @@ command! -nargs=0 -bar DbgStepOver          python __debugger.stepOver()
 command! -nargs=0 -bar DbgStepOut           python __debugger.stepOut()
 command! -nargs=0 -bar DbgRefreshWatch      python __debugger.updateWatch()
 command! -nargs=0 -bar DbgFlushBreakpoints  python __debugger.removeAllBreakpoints()
-command! -nargs=0 -bar DbgWatchLineEnter    python __debugger.ui._watchLineEnter()
+command! -nargs=0 -bar DbgAddWatch          call g:__dbg_addWatchEval()
 
 function! g:__dbg_WatchFoldText()
   let nucolwidth = &fdc + &number*&numberwidth
@@ -68,6 +68,11 @@ function! g:__dbg_WatchFoldText()
   return line . repeat(" ",fillcharcount) . fdnfo
 endfunction
 
+function! g:__dbg_addWatchEval()
+    let g:__dbg_watchEval = inputdialog("Please enter the expression to add to watch:")
+    python __debugger.addWatchExpr(vim.eval("g:__dbg_watchEval"))
+    python __debugger.updateWatch()
+endfunction
 
 """ Begin python code for managing the debugger
 python <<EOF
@@ -194,6 +199,7 @@ class StackWindow(VimWindow):
         # set key mappings for the stack window
         self.command("nnoremap <buffer> <silent> <cr>          :python __debugger.selectStackDepth()<cr>")
         self.command("nnoremap <buffer> <silent> <2-LeftMouse> :python __debugger.selectStackDepth()<cr>")
+        self.command("resize 10%")
 
         self.highlight_stack(0)
 
@@ -257,6 +263,10 @@ class WatchWindow(VimWindow):
 
     def setPropertyList(self, plist1, plist2, vlist):
         self.clean()
+        for i in range(0,len(plist2)):
+            line = "%s = " % plist2[i]
+            item = vlist[1][i]
+            self.writeValue(item, 0, line)
         for i in range(0,len(plist1)):
             line = "%s = " % plist1[i]
             item = vlist[0][i]
@@ -276,7 +286,7 @@ class WatchWindow(VimWindow):
             else:
                 self.write("".ljust(2*level) + firstLine + "array{}")
         elif isinstance(item, basestring):
-            self.write("".ljust(2*(level)) + firstLine + r'"%s",' % item)
+            self.write("".ljust(2*(level)) + firstLine + '"%s",' % item.replace('"', '\\"'))
         else:
             self.write("".ljust(2*(level)) + firstLine + r'%s,' % item)
 
@@ -341,7 +351,7 @@ class DBGPDebuggerUI:
 
         self.watchwin = WatchWindow(self)
         self.stackwin = StackWindow(self)
-        self.tracewin = TraceWindow(self)
+        #self.tracewin = TraceWindow(self)
 
     def activate(self):
         self.origTab = vim.eval("tabpagenr()")
@@ -350,7 +360,7 @@ class DBGPDebuggerUI:
 
         self.watchwin.create("vertical belowright new")
         self.stackwin.create("belowright new")
-        self.tracewin.create("belowright new")
+        #self.tracewin.create("belowright new")
 
         self.active = True
 
@@ -360,7 +370,7 @@ class DBGPDebuggerUI:
 
             self.watchwin.destroy()
             self.stackwin.destroy()
-            self.tracewin.destroy()
+            #self.tracewin.destroy()
 
             vim.command("tabclose")
             vim.command("tabn %s" % self.origTab)
@@ -444,7 +454,8 @@ class DBGPDebuggerUI:
         self.bpList = {}
 
     def trace(self, text):
-        self.tracewin.write(text)
+        pass
+        #self.tracewin.write(text)
 
     def _watchLineEnter(self):
         self.watchwin.lineEnter();
@@ -603,7 +614,8 @@ class DBGPDebuggerWrapper:
         self.ui.setProperties(localList, self.watchList, resp)
 
     def addWatchExpr(self, expr):
-        self.watchList.append(expr)
+        if len(expr) > 1:
+            self.watchList.append(expr)
 
 global __debugger
 __debugger = DBGPDebuggerWrapper()
