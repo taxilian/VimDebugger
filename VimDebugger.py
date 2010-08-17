@@ -3316,7 +3316,7 @@ class VimDebugger(manager):
         if self.language.upper() == "PHP":
             for key in PHP_FUNCTIONS:
                 tmp = self.session.evalString("eval('%s')" % PHP_FUNCTIONS[key])
-        self.session.featureSet("max_data", 131072)
+        self.session.featureSet("max_data", 1048576)
         # XXX notify init listeners
         return 1
 
@@ -3353,6 +3353,42 @@ class VimDebugger(manager):
 
     def isConnected(self):
         return self.init != None
+
+    def phpEval(self, evalCode):
+        methodText = "function() { return %s; }" % evalCode
+        evalText = "__xdbg_get_value(__xdbg_evalWatch(%s), 3)" % methodText
+
+        try:
+            strOutput = self.session.evalString(cmd).value
+        except Exception, e:
+            return "Could not eval %s: %s" % (evalCode, e.msg)
+
+        d=JSONDecoder()
+        try:
+            resp = d.decode(strOutput)
+        except Exception, e:
+            resp = "Could not eval code: %s" % e.msg
+
+        return resp
+
+    def phpWatch(self, varList):
+        """ Expects a list of $var names (formatted that way)
+        """
+        list1 = []
+        for item in varList:
+            list1.append("(isset(%s) ? %s : null)" % (item, item))
+
+        list1txt = ", ".join(list1)
+        cmd = "__xdbg_get_objList(array(%s))" % list1txt
+        strOutput = self.session.evalString(cmd).value
+        d=JSONDecoder()
+        try:
+            resp = d.decode(strOutput)
+        except Exception, e:
+            print e
+            resp = "Could not get watch list: %s" % e.msg
+
+        return resp
 
 PHP_FUNCTIONS = {
         "var_dump": 'function __xdbg_var_dump($var) { ob_start(); var_dump($var); $tmp = ob_get_contents(); ob_end_clean(); return $tmp; }',
@@ -3442,7 +3478,7 @@ function __xdbg_get_propertyList($propList, $item, $maxDepth=2) {
     return $output;
 }""",
     "get_methodList": """
-function __xdbg_get_methodList($methodList) {
+function __xdbg_get_methodList($methodList, $className) {
     $output = array();
     foreach ($methodList as $method) {
         $static = $method->isStatic() ? "static " : "";
@@ -3453,7 +3489,10 @@ function __xdbg_get_methodList($methodList) {
         foreach ($plist as $param) {
             $params[] = "$" . $param->getName();
         }
-        $desc = $static."$vis $name(" . implode(", ", $params) . ")";
+        $desc = $static."$vis $name(" . implode(", ", $params) . ");";
+        if ($method->getDeclaringClass()->getName() != $className) {
+            $desc .= "  // inherited from $className";
+        }
         $output[$desc] = array($method->getFileName(), $method->getStartLine());
     }
     ksort($output);
@@ -3466,22 +3505,27 @@ function __xdbg_get_object($var, $maxDepth=3) {
     $ref = new ReflectionClass($var);
     $entry = array(
         "properties" => __xdbg_get_propertyList($ref->getProperties(), $var, $maxDepth-1),
-        "methods" => __xdbg_get_methodList($ref->getMethods()),
+        "methods" => __xdbg_get_methodList($ref->getMethods(), $ref->getName()),
         "className" => $class,
         "isClass" => true,
     );
     return $entry;
 }""",
     "get_objList": """
-function __xdbg_get_objList(array $listx2) {
+function __xdbg_get_objList(array $list) {
     $outputFull = array();
-    foreach ($listx2 as $list) {
-        $output = array();
-        foreach ($list as $item) {
-            $output[] = __xdbg_get_value($item);
-        }
-        $outputFull[] = $output;
+    foreach ($list as $item) {
+        $outputFull[] = __xdbg_get_value($item);
     }
     return @json_encode($outputFull);
 }""",
-        }
+        "evalWatch": """
+    function __xdbg_evalWatch($method) {
+        ob_start();
+        $ret = $method();
+        $tmp = ob_get_contents();
+        ob_end_clean();
+        return json_encode(empty($tmp) ?: $ret);
+    }',
+        """,
+}
