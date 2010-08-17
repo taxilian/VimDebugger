@@ -1974,7 +1974,7 @@ class session(serversession):
     def waitResponse(self, tid, timeout=5):
         return self._waitResponse(tid, timeout)
 
-    def _waitResponse(self, tid, timeout=5):
+    def _waitResponse(self, tid, timeout=25):
         ticks = 0
         while not timeout or ticks < timeout:
             if tid in self._responses:
@@ -3363,14 +3363,14 @@ function __xdbg_get_value($var, $maxDepth=3) {
     $return = null;
     $isObj = is_object($var);
 
-    if ($isObj && in_array("Doctrine\Common\Collections\Collection", class_implements($var))) {
+    if ($isObj && in_array("Doctrine\\Common\\Collections\\Collection", class_implements($var))) {
         $var = $var->toArray();
     }
-    
+
     if ($maxDepth > 0) {
         if (is_array($var)) {
             $return = array();
-        
+
             foreach ($var as $k => $v) {
                 $return[$k] = __xdbg_get_value($v, $maxDepth - 1);
             }
@@ -3414,10 +3414,10 @@ function __xdbg_get_value($var, $maxDepth=3) {
             $return = $var;
         }
     } else {
-        $return = is_object($var) ? get_class($var) 
+        $return = is_object($var) ? get_class($var)
             : (is_array($var) ? "Array(" . count($var) . ")" : $var);
     }
-    
+
     return $return;
 }""",
     "get_propertyList": """
@@ -3438,6 +3438,7 @@ function __xdbg_get_propertyList($propList, $item, $maxDepth=2) {
         $desc = $static."$vis \$$name";
         $output[$desc] = __xdbg_get_value($val, $maxDepth);
     }
+    ksort($output);
     return $output;
 }""",
     "get_methodList": """
@@ -3453,8 +3454,9 @@ function __xdbg_get_methodList($methodList) {
             $params[] = "$" . $param->getName();
         }
         $desc = $static."$vis $name(" . implode(", ", $params) . ")";
-        $output[] = $desc;
+        $output[$desc] = array($method->getFileName(), $method->getStartLine());
     }
+    ksort($output);
     return $output;
 }""",
     "get_object": """

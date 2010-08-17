@@ -54,8 +54,10 @@ command! -nargs=0 -bar DbgStepInto          python __debugger.stepInto()
 command! -nargs=0 -bar DbgStepOver          python __debugger.stepOver()
 command! -nargs=0 -bar DbgStepOut           python __debugger.stepOut()
 command! -nargs=0 -bar DbgRefreshWatch      python __debugger.updateWatch()
+command! -nargs=0 -bar DbgFlushBreakpoints  python __debugger.removeAllBreakpoints()
+command! -nargs=0 -bar DbgWatchLineEnter    python __debugger.ui._watchLineEnter()
 
-function g:__dbg_WatchFoldText()
+function! g:__dbg_WatchFoldText()
   let nucolwidth = &fdc + &number*&numberwidth
   let winwd = winwidth(0) - nucolwidth - 5
   let foldlinecount = foldclosedend(v:foldstart) - foldclosed(v:foldstart) + 1
@@ -73,80 +75,79 @@ python <<EOF
 import vim, os
 
 class VimWindow:
-  """ wrapper class of window of vim """
-  def __init__(self, owner, name = 'DEBUG_WINDOW'):
-    """ initialize """
-    self.name       = name
-    self.buffer     = None
-    self.firstwrite = True
-    self.owner = owner
+    """ wrapper class of window of vim """
+    def __init__(self, owner, name = 'DEBUG_WINDOW'):
+        """ initialize """
+        self.name       = name
+        self.buffer     = None
+        self.firstwrite = True
+        self.owner = owner
 
-  def isprepared(self):
-    """ check window is OK """
-    if self.buffer == None or len(dir(self.buffer)) == 0 or self.getwinnr() == -1:
-      return False
-    return True
+    def isprepared(self):
+        """ check window is OK """
+        if self.buffer == None or len(dir(self.buffer)) == 0 or self.getwinnr() == -1:
+            return False
+        return True
 
-  def prepare(self):
-    """ check window is OK (switch to working tab first), if not then create """
-    self.owner.gotoWorkingTab()
-    if not self.isprepared():
-      self.create()
+    def prepare(self):
+        """ check window is OK (switch to working tab first), if not then create """
+        self.owner.gotoWorkingTab()
+        if not self.isprepared():
+            self.create()
 
-  def on_create(self):
-    pass
+    def on_create(self):
+        pass
 
-  def getwinnr(self):
-    return int(vim.eval("bufwinnr('"+self.name+"')"))
+    def getwinnr(self):
+        return int(vim.eval("bufwinnr('"+self.name+"')"))
 
-  def write(self, msg):
-    """ append last """
-    self.prepare()
-    if type(msg) is unicode:
-        msg.encode("utf8")
-    if self.firstwrite:
-      self.firstwrite = False
-      self.buffer[:] = str(msg).split('\n')
-    else:
-      self.buffer.append(str(msg).split('\n'))
-    self.command('normal G')
-    #self.window.cursor = (len(self.buffer), 1)
+    def write(self, msg):
+        """ append last """
+        self.prepare()
+        msg = msg.encode("utf-8", "replace")
+        if self.firstwrite:
+            self.firstwrite = False
+            self.buffer[:] = str(msg).split('\n')
+        else:
+            self.buffer.append(str(msg).split('\n'))
+        self.command('normal G')
+        #self.window.cursor = (len(self.buffer), 1)
 
-  def create(self, method = 'new'):
-    """ create window """
-    vim.command('silent ' + method + ' ' + self.name)
-    #if self.name != 'LOG___WINDOW':
-    vim.command("setlocal buftype=nofile")
-    vim.command("setlocal noswapfile")
-    vim.command("setlocal nowrap")
-    self.buffer = vim.current.buffer
-    self.width  = int( vim.eval("winwidth(0)")  )
-    self.height = int( vim.eval("winheight(0)") )
-    self.on_create()
+    def create(self, method = 'new'):
+        """ create window """
+        vim.command('silent ' + method + ' ' + self.name)
+        #if self.name != 'LOG___WINDOW':
+        vim.command("setlocal buftype=nofile")
+        vim.command("setlocal noswapfile")
+        vim.command("setlocal nowrap")
+        self.buffer = vim.current.buffer
+        self.width  = int( vim.eval("winwidth(0)")  )
+        self.height = int( vim.eval("winheight(0)") )
+        self.on_create()
 
-  def destroy(self):
-    """ destroy window """
-    if self.buffer == None or len(dir(self.buffer)) == 0:
-      return
-    #if self.name == 'LOG___WINDOW':
-    #  self.command('hide')
-    #else:
-    self.command('bdelete ' + self.name)
-    self.firstwrite = True
+    def destroy(self):
+        """ destroy window """
+        if self.buffer == None or len(dir(self.buffer)) == 0:
+            return
+        #if self.name == 'LOG___WINDOW':
+        #  self.command('hide')
+        #else:
+        self.command('bdelete ' + self.name)
+        self.firstwrite = True
 
-  def clean(self):
-    """ clean all datas in buffer """
-    self.prepare()
-    self.buffer[:] = []
-    self.firstwrite = True
+    def clean(self):
+        """ clean all datas in buffer """
+        self.prepare()
+        self.buffer[:] = []
+        self.firstwrite = True
 
-  def command(self, cmd):
-    """ go to my window & execute command """
-    self.prepare()
-    winnr = self.getwinnr()
-    if winnr != int(vim.eval("winnr()")):
-      vim.command(str(winnr) + 'wincmd w')
-    vim.command(cmd)
+    def command(self, cmd):
+        """ go to my window & execute command """
+        self.prepare()
+        winnr = self.getwinnr()
+        if winnr != int(vim.eval("winnr()")):
+            vim.command(str(winnr) + 'wincmd w')
+        vim.command(cmd)
 
 #
 # class for the window pane that holds the stack trace
@@ -204,26 +205,53 @@ class StackWindow(VimWindow):
 # class for debugger traces (misc info)
 #
 class TraceWindow(VimWindow):
-  def __init__(self, owner, name = 'TRACE_WINDOW'):
-    VimWindow.__init__(self, owner, name)
+    def __init__(self, owner, name = 'TRACE_WINDOW'):
+        VimWindow.__init__(self, owner, name)
 
-  def on_create(self):
-    self.command('set nowrap fdm=marker fmr={{{,}}} fdl=0')
+    def on_create(self):
+        self.command('set nowrap fdm=marker fmr={{{,}}} fdl=0')
 
 #
 # class for the watch window
 #
 class WatchWindow(VimWindow):
+    SourceList = {}
+
     def __init__(self, owner, name = 'WATCH_WINDOW'):
         VimWindow.__init__(self, owner, name)
+
+    def clean(self):
+        """ clean all datas in buffer """
+        VimWindow.clean(self)
+        self.SourceList = {}
+
+    def write(self, msg, file = "", line = -1):
+        """ append last """
+        VimWindow.write(self, msg)
+        lineNo = len(self.buffer)
+        if line > -1:
+            self.SourceList[lineNo] = (file, line)
+        #self.window.cursor = (len(self.buffer), 1)
+
+    def lineEnter(self):
+        self.prepare()
+        line = vim.current.window.cursor[0]
+        if line in self.SourceList:
+            file, filePos = self.SourceList[line]
+            self.owner.gotoWorkingTab()
+            self.owner.gotoSourceWindow()
+            vim.command("tabe %s" % file)
+            vim.command("normal %dG" % filePos)
+        else:
+            vim.command("normal za")
 
     def on_create(self):
         self.write('<?')
         self.command('setlocal noai nocin')
         self.command('setlocal foldenable foldmethod=marker foldmarker={,} commentstring=%s foldcolumn=0 foldlevel=0 nonumber noswapfile shiftwidth=2')
         self.command('setlocal foldtext=g:__dbg_WatchFoldText()')
-        self.command("nnoremap <buffer> <silent> <cr>          za")
-        self.command("nnoremap <buffer> <silent> <2-LeftMouse> za")
+        self.command("nnoremap <buffer> <silent> <cr>          :python __debugger.ui._watchLineEnter()<cr>")
+        self.command("nnoremap <buffer> <silent> <2-LeftMouse> :python __debugger.ui._watchLineEnter()<cr>")
         #setlocal foldtext=ProjFoldText() nobuflisted nowrap
 
     def setPropertyList(self, plist1, plist2, vlist):
@@ -253,18 +281,17 @@ class WatchWindow(VimWindow):
 
     def writeClassValues(self, arr, level, firstLine):
         self.write("".ljust(2*level) + firstLine)
-        if len(arr["methods"]) > 0:
+        if len(arr["methods"].items()) > 0:
             self.write("".ljust(2*(level+1)) + "%d methods {" % len(arr["methods"]))
-            for item in arr["methods"]:
-                self.write("".ljust(2*(level+2)) + item)
+            for item, location in arr["methods"].items():
+                self.write("".ljust(2*(level+2)) + item, location[0], location[1])
             self.write("".ljust(2*(level+1)) + "}")
         else:
             self.write("".ljust(2*(level+1)) + "No methods")
 
         if isinstance(arr["properties"], dict) > 0:
             self.write("".ljust(2*(level+1)) + "%d properties {" % len(arr["properties"].keys()))
-            for key in arr["properties"].keys():
-                item = arr["properties"][key]
+            for key, item in arr["properties"].items():
                 self.writeValue(item, level+2, "%s = " % key)
             self.write("".ljust(2*(level+1)) + "}")
         else:
@@ -286,17 +313,6 @@ class WatchWindow(VimWindow):
             self.writeValue(arr[item], level + 1, '"%s" => ' % item )
         self.write("".ljust(2*level) + "},")
         endLine = len(self.buffer)
-
-    def write(self, msg):
-        """ append last """
-        self.prepare()
-        if self.firstwrite:
-            self.firstwrite = False
-            self.buffer[:] = str(msg).split('\n')
-        else:
-            self.buffer.append(str(msg).split('\n'))
-        self.command('normal G')
-        #self.window.cursor = (len(self.buffer), 1)
 
 # User interface controls
 class DBGPDebuggerUI:
@@ -421,8 +437,16 @@ class DBGPDebuggerUI:
         bpNo = self.bpList[guid]
         vim.command("sign unplace %s" % bpNo)
 
+    def removeBreakpoints(self):
+        for guid, sign in self.bpList.items():
+            vim.command("silent! sign unplace %s" % sign)
+        self.bpList = {}
+
     def trace(self, text):
         self.tracewin.write(text)
+
+    def _watchLineEnter(self):
+        self.watchwin.lineEnter();
 
 class DBGPDebuggerWrapper:
     debugger = None
@@ -552,6 +576,11 @@ class DBGPDebuggerWrapper:
             self._removeLineBreakpoint(file, line)
             mgr.removeBreakpoint(guid)
             self.ui.unmarkBreakpoint(guid)
+
+    def removeAllBreakpoints(self):
+        mgr = self.debugger.breakpointManager
+        mgr.removeAllBreakpoints()
+        self.ui.removeBreakpoints()
 
     def getDefWatchList(self):
         ctx = self.debugger.session.contextGet(0, self.depth)
