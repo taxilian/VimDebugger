@@ -292,9 +292,10 @@ class WatchWindow(VimWindow):
 
     def writeClassValues(self, arr, level, firstLine):
         self.write("".ljust(2*level) + firstLine)
-        if len(arr["methods"].items()) > 0:
+        if len(arr["methods"]) > 0:
             self.write("".ljust(2*(level+1)) + "%d methods {" % len(arr["methods"]))
-            for item, location in arr["methods"].items():
+            for item in sorted(arr["methods"].keys()):
+                location = arr["methods"][item]
                 self.write("".ljust(2*(level+2)) + item, location[0], location[1])
             self.write("".ljust(2*(level+1)) + "}")
         else:
@@ -302,7 +303,8 @@ class WatchWindow(VimWindow):
 
         if isinstance(arr["properties"], dict) > 0:
             self.write("".ljust(2*(level+1)) + "%d properties {" % len(arr["properties"].keys()))
-            for key, item in arr["properties"].items():
+            for key in sorted(arr["properties"].keys()):
+                item = arr["properties"][key]
                 self.writeValue(item, level+2, "%s = " % key)
             self.write("".ljust(2*(level+1)) + "}")
         else:
