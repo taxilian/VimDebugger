@@ -32,8 +32,8 @@
 
 if filereadable($VIMRUNTIME."/bundle/VimDebugger/plugin/VimDebugger.py")
   pyfile $VIMRUNTIME/bundle/VimDebugger/plugin/VimDebugger.py
-if filereadable($HOME."/.vim/bundle/VimDebugger/plugin/VimDebugger.py")
-  pyfile $VIMRUNTIME/.vim/bundle/VimDebugger/plugin/VimDebugger.py
+elseif filereadable($HOME."/.vim/bundle/VimDebugger/plugin/VimDebugger.py")
+  pyfile $HOME/.vim/bundle/VimDebugger/plugin/VimDebugger.py
 elseif filereadable($VIMRUNTIME."/plugin/VimDebugger.py")
   pyfile $VIMRUNTIME/plugin/VimDebugger.py
 elseif filereadable($HOME."/.vim/plugin/VimDebugger.py")
