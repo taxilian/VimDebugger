@@ -600,6 +600,7 @@ class DBGPDebuggerWrapper:
         mgr = self.debugger.breakpointManager
         mgr.removeAllBreakpoints()
         self.ui.removeBreakpoints()
+        self.lineBreakpointList = {}
 
     def getDefWatchList(self):
         ctx = self.debugger.session.contextGet(0, self.depth)
