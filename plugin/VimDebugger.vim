@@ -29,37 +29,48 @@
 "
 " Authors:
 "    Richard Bateman <taxilian@gmail.com>
-
-if filereadable($VIMRUNTIME."/bundle/VimDebugger/plugin/VimDebugger.py")
-  pyfile $VIMRUNTIME/bundle/VimDebugger/plugin/VimDebugger.py
-elseif filereadable($HOME."/.vim/bundle/VimDebugger/plugin/VimDebugger.py")
-  pyfile $HOME/.vim/bundle/VimDebugger/plugin/VimDebugger.py
-elseif filereadable($VIMRUNTIME."/plugin/VimDebugger.py")
-  pyfile $VIMRUNTIME/plugin/VimDebugger.py
-elseif filereadable($HOME."/.vim/plugin/VimDebugger.py")
-  pyfile $HOME/.vim/plugin/VimDebugger.py
-elseif filereadable($VIM."/vimfiles/plugin/VimDebugger.py")
-  pyfile $VIM/vimfiles/plugin/VimDebugger.py
-else
-  call confirm('VimDebugger.vim: Unable to find VimDebugger.py. Place it in either your home vim directory or in the Vim runtime directory.', 'OK')
-endif
-
-sign define _dbg_current text=->  texthl=DbgCurrent linehl=DbgCurrent
-sign define _dbg_stack text==>  texthl=DbgCurrent linehl=DbgCurrent
-sign define _dbg_breakpt text=B>  texthl=DbgBreakPt linehl=DbgBreakPt
+"    Steve Francia <spf13-vim@spf13.com>
 
 
-command! -nargs=0 -bar DbgRun               python __debugger.run()
-command! -nargs=0 -bar DbgListen            python __debugger.start_debugger()
-command! -nargs=0 -bar DbgStop              python __debugger.stop()
-command! -nargs=0 -bar DbgDetach            python __debugger.detach()
-command! -nargs=0 -bar DbgToggleBreakpoint  python __debugger.toggleLineBreakpointHere()
-command! -nargs=0 -bar DbgStepInto          python __debugger.stepInto()
-command! -nargs=0 -bar DbgStepOver          python __debugger.stepOver()
-command! -nargs=0 -bar DbgStepOut           python __debugger.stepOut()
-command! -nargs=0 -bar DbgRefreshWatch      python __debugger.updateWatch()
-command! -nargs=0 -bar DbgFlushBreakpoints  python __debugger.removeAllBreakpoints()
-command! -nargs=0 -bar DbgAddWatch          call g:__dbg_addWatchEval()
+function s:VimDebuggerLoad()
+  if has('python')
+    call s:VimDebuggerInit()
+  endif
+endfunction
+
+call s:VimDebuggerLoad()
+
+function s:VimDebuggerInit()
+	if filereadable($VIMRUNTIME."/bundle/VimDebugger/plugin/VimDebugger.py")
+	  pyfile $VIMRUNTIME/bundle/VimDebugger/plugin/VimDebugger.py
+	elseif filereadable($HOME."/.vim/bundle/VimDebugger/plugin/VimDebugger.py")
+	  pyfile $HOME/.vim/bundle/VimDebugger/plugin/VimDebugger.py
+	elseif filereadable($VIMRUNTIME."/plugin/VimDebugger.py")
+	  pyfile $VIMRUNTIME/plugin/VimDebugger.py
+	elseif filereadable($HOME."/.vim/plugin/VimDebugger.py")
+	  pyfile $HOME/.vim/plugin/VimDebugger.py
+	elseif filereadable($VIM."/vimfiles/plugin/VimDebugger.py")
+	  pyfile $VIM/vimfiles/plugin/VimDebugger.py
+	else
+	  call confirm('VimDebugger.vim: Unable to find VimDebugger.py. Place it in either your home vim directory or in the Vim runtime directory.', 'OK')
+	endif
+
+	sign define _dbg_current text=->  texthl=DbgCurrent linehl=DbgCurrent
+	sign define _dbg_stack text==>  texthl=DbgCurrent linehl=DbgCurrent
+	sign define _dbg_breakpt text=B>  texthl=DbgBreakPt linehl=DbgBreakPt
+
+	command! -nargs=0 -bar DbgRun               python __debugger.run()
+	command! -nargs=0 -bar DbgListen            python __debugger.start_debugger()
+	command! -nargs=0 -bar DbgStop              python __debugger.stop()
+	command! -nargs=0 -bar DbgDetach            python __debugger.detach()
+	command! -nargs=0 -bar DbgToggleBreakpoint  python __debugger.toggleLineBreakpointHere()
+	command! -nargs=0 -bar DbgStepInto          python __debugger.stepInto()
+	command! -nargs=0 -bar DbgStepOver          python __debugger.stepOver()
+	command! -nargs=0 -bar DbgStepOut           python __debugger.stepOut()
+	command! -nargs=0 -bar DbgRefreshWatch      python __debugger.updateWatch()
+	command! -nargs=0 -bar DbgFlushBreakpoints  python __debugger.removeAllBreakpoints()
+	command! -nargs=0 -bar DbgAddWatch          call g:__dbg_addWatchEval()
+endfunction
 
 function! g:__dbg_WatchFoldText()
   let nucolwidth = &fdc + &number*&numberwidth
@@ -78,6 +89,8 @@ function! g:__dbg_addWatchEval()
     python __debugger.updateWatch()
 endfunction
 
+if has('python')
+  function DefPython()
 """ Begin python code for managing the debugger
 python <<EOF
 
@@ -627,3 +640,6 @@ class DBGPDebuggerWrapper:
 global __debugger
 __debugger = DBGPDebuggerWrapper()
 EOF
+  endfunction
+  call DefPython()
+endif
