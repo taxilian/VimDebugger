@@ -32,15 +32,7 @@
 "    Steve Francia <spf13-vim@spf13.com>
 
 
-function s:VimDebuggerLoad()
-  if has('python')
-    call s:VimDebuggerInit()
-  endif
-endfunction
-
-call s:VimDebuggerLoad()
-
-function s:VimDebuggerInit()
+if has('python')
 	if filereadable($VIMRUNTIME."/bundle/VimDebugger/plugin/VimDebugger.py")
 	  pyfile $VIMRUNTIME/bundle/VimDebugger/plugin/VimDebugger.py
 	elseif filereadable($HOME."/.vim/bundle/VimDebugger/plugin/VimDebugger.py")
@@ -70,7 +62,7 @@ function s:VimDebuggerInit()
 	command! -nargs=0 -bar DbgRefreshWatch      python __debugger.updateWatch()
 	command! -nargs=0 -bar DbgFlushBreakpoints  python __debugger.removeAllBreakpoints()
 	command! -nargs=0 -bar DbgAddWatch          call g:__dbg_addWatchEval()
-endfunction
+endif
 
 function! g:__dbg_WatchFoldText()
   let nucolwidth = &fdc + &number*&numberwidth
