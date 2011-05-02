@@ -82,7 +82,7 @@ function! g:__dbg_addWatchEval()
 endfunction
 
 if !exists('g:debuggerTimeout')
-  let g:debuggerPort = 10
+  let g:debuggerTimeout = 10
 endif 
 
 if has('python')
