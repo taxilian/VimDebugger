@@ -81,6 +81,10 @@ function! g:__dbg_addWatchEval()
     python __debugger.updateWatch()
 endfunction
 
+if !exists('g:debuggerTimeout')
+  let g:debuggerTimeout = 10
+endif 
+
 if has('python')
   function DefPython()
 """ Begin python code for managing the debugger
@@ -480,7 +484,8 @@ class DBGPDebuggerWrapper:
     watchEvalList = []
 
     def __init__(self):
-        self.debugger = VimDebugger()
+        timeout = int(vim.eval('g:debuggerTimeout'))
+        self.debugger = VimDebugger(timeout)
         self.ui = DBGPDebuggerUI()
 
     def activateUI(self):
