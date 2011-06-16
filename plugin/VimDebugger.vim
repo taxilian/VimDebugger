@@ -32,6 +32,7 @@
 "    Steve Francia <spf13-vim@spf13.com>
 
 
+<<<<<<< HEAD
 function s:VimDebuggerLoad()
   if has('python')
     call s:VimDebuggerInit()
@@ -41,6 +42,9 @@ endfunction
 call s:VimDebuggerLoad()
 
 function s:VimDebuggerInit()
+=======
+if has('python')
+>>>>>>> taxilian/master
 	if filereadable($VIMRUNTIME."/bundle/VimDebugger/plugin/VimDebugger.py")
 	  pyfile $VIMRUNTIME/bundle/VimDebugger/plugin/VimDebugger.py
 	elseif filereadable($HOME."/.vim/bundle/VimDebugger/plugin/VimDebugger.py")
@@ -70,7 +74,11 @@ function s:VimDebuggerInit()
 	command! -nargs=0 -bar DbgRefreshWatch      python __debugger.updateWatch()
 	command! -nargs=0 -bar DbgFlushBreakpoints  python __debugger.removeAllBreakpoints()
 	command! -nargs=0 -bar DbgAddWatch          call g:__dbg_addWatchEval()
+<<<<<<< HEAD
 endfunction
+=======
+endif
+>>>>>>> taxilian/master
 
 function! g:__dbg_WatchFoldText()
   let nucolwidth = &fdc + &number*&numberwidth
@@ -89,6 +97,13 @@ function! g:__dbg_addWatchEval()
     python __debugger.updateWatch()
 endfunction
 
+<<<<<<< HEAD
+=======
+if !exists('g:debuggerTimeout')
+  let g:debuggerTimeout = 10
+endif 
+
+>>>>>>> taxilian/master
 if has('python')
   function DefPython()
 """ Begin python code for managing the debugger
@@ -488,7 +503,8 @@ class DBGPDebuggerWrapper:
     watchEvalList = []
 
     def __init__(self):
-        self.debugger = VimDebugger()
+        timeout = int(vim.eval('g:debuggerTimeout'))
+        self.debugger = VimDebugger(timeout)
         self.ui = DBGPDebuggerUI()
 
     def activateUI(self):
