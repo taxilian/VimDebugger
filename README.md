@@ -3,6 +3,13 @@ Vim Debugger
 
 VimDebugger is a dbgp client plugin for vim for debugging php applications with xdebug.  It is currently in early stages, but is already much more advanced than many other options.
 
+Not currently maintained
+========================
+
+This project is not currently maintained for the simple reason that I rarely ever use PHP anymore.  The foundation is there, however, and if anyone would like to take over the project I'd
+be happy to put a link to their fork here so that people can find it.  Many people are using it already, but there have been some issues reported that I simply have no time or strong enough
+interest to fix them.
+
 Special Thanks
 ==============
 
